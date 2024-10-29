@@ -1,41 +1,59 @@
-use panduza_core::device::traits::DeviceActions;
-use panduza_core::device::Device;
-use panduza_core::interface::builder::Builder as InterfaceBuilder;
+use async_trait::async_trait;
+use panduza_platform_core::DeviceLogger;
+use panduza_platform_core::{Device, DeviceOperations, Error};
+use std::time::Duration;
+use tokio::time::sleep;
 
+///
+/// Device to control PicoHA SSB Board
+///
+pub struct StdSerialPortDevice {
+    ///
+    /// Device logger
+    logger: Option<DeviceLogger>,
+}
 
-/// Serial Port Device
-/// 
-pub struct SerialPort;
-
-
-impl DeviceActions for SerialPort {
-
-    /// Create the interfaces
-    fn interface_builders(&self, device: &Device) 
-        -> Result<Vec<InterfaceBuilder>, panduza_core::Error>
-    {
-
-        // println!("Ka3005::interface_builders");
-        // println!("{}", device_settings);
-
-        // let mut serial_conf = SerialConfig::new();
-        // serial_conf.import_from_json_settings(device_settings);
-
-        // const_settings = {
-        //     "usb_vendor": '0416',
-        //     "usb_model": '5011',
-        //     "serial_baudrate": 9600
-        // }
-
-        // serial_conf.serial_baudrate = Some(9600);
-
-        let mut list = Vec::new();
-        // list.push(
-        //     itf_bpc::build("channel", &serial_conf)
-        // );
-        return Ok(list);
+impl StdSerialPortDevice {
+    ///
+    /// Constructor
+    ///
+    pub fn new() -> Self {
+        StdSerialPortDevice { logger: None }
     }
 }
 
+#[async_trait]
+impl DeviceOperations for StdSerialPortDevice {
+    ///
+    ///
+    ///
+    async fn mount(&mut self, device: Device) -> Result<(), Error> {
+        //
+        // Init logger
+        self.logger = Some(device.logger.clone());
 
+        //
+        //
+        let logger = device.logger.clone();
 
+        //
+        //
+        logger.debug("Mount attributes");
+        // //
+        // // Mount bus selector (to choice the bus to use on the pico)
+        // mount_bus_selector(device.clone()).await?;
+        // //
+        // // Mount memory maps
+        // mount_memory_map("C1", 0, device.clone()).await?;
+        // mount_memory_map("C2", 1, device.clone()).await?;
+        // mount_memory_map("C3", 2, device.clone()).await?;
+
+        Ok(())
+    }
+    ///
+    /// Easiest way to implement the reboot event
+    ///
+    async fn wait_reboot_event(&mut self, mut _device: Device) {
+        sleep(Duration::from_secs(5)).await;
+    }
+}

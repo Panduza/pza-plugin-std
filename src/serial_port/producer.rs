@@ -1,56 +1,24 @@
-use serde_json;
-use serde_json::json;
-use panduza_core::device::traits::{DeviceActions, Producer};
+use super::device::StdSerialPortDevice;
+use panduza_platform_core::{DeviceOperations, Producer};
 
-use super::device::SerialPort;
+pub struct StdSerialPort {}
 
-
-pub struct DeviceProducer;
-
-impl DeviceProducer {
-    pub fn new_boxed() -> Box<dyn Producer> {
-        return Box::new(DeviceProducer{});
+impl StdSerialPort {
+    pub fn new() -> Box<StdSerialPort> {
+        Box::new(StdSerialPort {})
     }
 }
 
-impl Producer for DeviceProducer {
-
-    // fn manufacturer(&self) -> String {
-    //     return "korad".to_string();
-    // }
-    // fn model(&self) -> String {
-    //     return "KA3005".to_string();
-    // }
-
-    fn settings_props(&self) -> serde_json::Value {
-        return json!([
-            {
-                "name": "usb_vendor",
-                "type": "string",
-                "default": ""
-            },
-            {
-                "name": "usb_model",
-                "type": "string",
-                "default": ""
-            },
-            {
-                "name": "usb_serial",
-                "type": "string",
-                "default": ""
-            },
-            {
-                "name": "serial_port_name",
-                "type": "string",
-                "default": ""
-            }
-        ]);
+impl Producer for StdSerialPort {
+    fn manufacturer(&self) -> String {
+        "std".to_string()
     }
 
-
-    fn produce(&self) -> Result<Box<dyn DeviceActions>, panduza_core::Error> {
-        return Ok(Box::new(SerialPort{}));
+    fn model(&self) -> String {
+        "serial-port".to_string()
     }
 
+    fn produce(&self) -> Result<Box<dyn DeviceOperations>, panduza_platform_core::Error> {
+        return Ok(Box::new(StdSerialPortDevice::new()));
+    }
 }
-
