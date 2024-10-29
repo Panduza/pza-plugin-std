@@ -48,6 +48,15 @@ impl DeviceOperations for StdSerialPortDevice {
         // mount_memory_map("C2", 1, device.clone()).await?;
         // mount_memory_map("C3", 2, device.clone()).await?;
 
+
+        // open => boolean
+        // settings
+        //      - port_name
+        //      - baudrate
+        //      - 
+        // data -> attribut stream string
+        //
+
         Ok(())
     }
     ///
