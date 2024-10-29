@@ -4,6 +4,10 @@ use panduza_platform_core::{Device, DeviceOperations, Error};
 use std::time::Duration;
 use tokio::time::sleep;
 
+pub mod settings;
+pub mod open;
+pub mod data;
+
 ///
 /// Device to control PicoHA SSB Board
 ///
