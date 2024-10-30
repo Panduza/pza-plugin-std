@@ -1,8 +1,11 @@
 use async_trait::async_trait;
-use panduza_platform_core::DeviceLogger;
 use panduza_platform_core::{Device, DeviceOperations, Error};
+use std::sync::Arc;
 use std::time::Duration;
+use tokio::sync::Mutex;
 use tokio::time::sleep;
+
+use super::model::Model;
 
 pub mod data;
 pub mod open;
@@ -12,15 +15,9 @@ pub mod settings;
 /// Device to control PicoHA SSB Board
 ///
 pub struct StdSerialPortDevice {
-    ///
-    /// Device logger
-    logger: Option<DeviceLogger>,
-
-
-    // Serial stream
-    // control: settings + control => shared across
-    // serial_stream: Option<SerialStream>, => totalement own by data
-
+    model: Arc<Mutex<Model>>, // Serial stream
+                              // model: settings + control => shared across
+                              // serial_stream: Option<SerialStream>, => totalement own by data
 }
 
 impl StdSerialPortDevice {
@@ -28,7 +25,9 @@ impl StdSerialPortDevice {
     /// Constructor
     ///
     pub fn new() -> Self {
-        StdSerialPortDevice { logger: None }
+        StdSerialPortDevice {
+            model: Model::new().into_arc_mutex(),
+        }
     }
 }
 
@@ -38,10 +37,6 @@ impl DeviceOperations for StdSerialPortDevice {
     ///
     ///
     async fn mount(&mut self, device: Device) -> Result<(), Error> {
-        //
-        // Init logger
-        self.logger = Some(device.logger.clone());
-
         //
         //
         let logger = device.logger.clone();
