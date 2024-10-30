@@ -15,6 +15,12 @@ pub struct StdSerialPortDevice {
     ///
     /// Device logger
     logger: Option<DeviceLogger>,
+
+
+    // Serial stream
+    // control: settings + control => shared across
+    // serial_stream: Option<SerialStream>, => totalement own by data
+
 }
 
 impl StdSerialPortDevice {
