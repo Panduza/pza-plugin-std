@@ -1,11 +1,9 @@
-use panduza_platform_core::{
-    spawn_on_command, AttOnlyMsgAtt, BidirMsgAtt, Device, DeviceLogger, Error, RawCodec,
-};
+use panduza_platform_core::{spawn_on_command, BidirMsgAtt, Device, DeviceLogger, Error, RawCodec};
 
 ///
 ///
 ///
-pub async fn mount_open_attribute(mut device: Device) -> Result<(), Error> {
+pub async fn mount_data_attribute(mut device: Device) -> Result<(), Error> {
     //
     // Create the attribute
     let attribute = device
@@ -14,10 +12,6 @@ pub async fn mount_open_attribute(mut device: Device) -> Result<(), Error> {
         .with_bidir_access()
         .finish_with_codec::<RawCodec>()
         .await;
-
-    //
-    // Init to false
-    attribute.set(false).await.unwrap();
 
     //
     // Execute action on each command received

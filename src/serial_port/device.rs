@@ -4,9 +4,9 @@ use panduza_platform_core::{Device, DeviceOperations, Error};
 use std::time::Duration;
 use tokio::time::sleep;
 
-pub mod settings;
-pub mod open;
 pub mod data;
+pub mod open;
+pub mod settings;
 
 ///
 /// Device to control PicoHA SSB Board
@@ -52,12 +52,14 @@ impl DeviceOperations for StdSerialPortDevice {
         // mount_memory_map("C2", 1, device.clone()).await?;
         // mount_memory_map("C3", 2, device.clone()).await?;
 
+        open::mount_open_attribute(device.clone()).await?;
+        data::mount_data_attribute(device.clone()).await?;
 
         // open => boolean
         // settings
         //      - port_name
         //      - baudrate
-        //      - 
+        //      -
         // data -> attribut stream string
         //
 
