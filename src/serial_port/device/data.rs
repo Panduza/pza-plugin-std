@@ -38,10 +38,14 @@ impl Driver {
 
         //
         // Get the port name
-        let port_name = settings
-            .port_name
-            .as_ref()
-            .ok_or_else(|| Error::BadSettings("Port name is not set in settings".to_string()))?;
+        // let port_name = settings
+        //     .port_name
+        //     .as_ref()
+        //     .ok_or_else(|| Error::BadSettings("Port name is not set in settings".to_string()))?;
+
+        //
+        //
+        let port = SerialPort::open("COM7", 115200).unwrap();
 
         // //
         // // Setup builder
@@ -51,14 +55,25 @@ impl Driver {
         //     .parity(settings.parity)
         //     .flow_control(settings.flow_control);
 
-        // //
-        // // Build the stream
-        // self.serial_stream = Some(
-        //     SerialStream::open(&serial_builder)
-        //         .map_err(|e| Error::BadSettings(format!("Unable to open serial stream: {}", e)))?,
-        // );
+        //
+        // Build the stream
+        self.serial_stream = Some(port);
 
         Ok(())
+    }
+
+    ///
+    ///
+    ///
+    pub async fn read(&self, buf: &mut [u8]) {
+        match &self.serial_stream {
+            Some(stream) => {
+                stream.read(buf).await.unwrap();
+            }
+            None => {
+                sleep(Duration::from_secs(60)).await;
+            }
+        }
     }
 
     // pub async fn read_available(&self) {
@@ -80,7 +95,7 @@ pub async fn mount_data_attribute(
 ) -> Result<(), Error> {
     //
     // Create the attribute
-    let attribute = device
+    let attribute: BidirMsgAtt<RawCodec> = device
         .create_attribute("data")
         .message()
         .with_bidir_access()
@@ -94,7 +109,7 @@ pub async fn mount_data_attribute(
         .spawn(async move {
             // tokio::spawn(async move {
             // loop {
-            process_requests(request_notifier.clone(), model.clone()).await;
+            process_requests(request_notifier.clone(), model.clone(), attribute.clone()).await;
             // }
 
             Ok(())
@@ -117,49 +132,56 @@ async fn process_requests(
     notifier: Arc<Notify>,
     model: Arc<Mutex<Model>>,
     // driver: Arc<Mutex<Driver>>,
+    attribute: BidirMsgAtt<RawCodec>,
 ) {
     // //
     //
-    let driver = Arc::new(Mutex::new(Driver::new()));
+    // let driver = Arc::new(Mutex::new(Driver::new()));
+    let mut driver = Driver::new();
 
-    let mut ppp = driver.lock().await.serial_stream.take().unwrap();
+    // let mut ppp = driver.lock().await.serial_stream.take().unwrap();
 
     // // ppp.readable().await;
-    let mut buf: [u8; 9] = [0; 9];
+    let mut buf: [u8; 512] = [0; 512];
     // ppp.try_read(&mut buf);
 
     // let mut driver_lock = driver.lock().await;
-    tokio::select! {
+    loop {
+        tokio::select! {
 
-        //
-        // new request
-        _ = notifier.notified() => {
+            //
+            // new request
+            _ = notifier.notified() => {
 
-            let mut model_lock = model.lock().await;
+                let mut model_lock = model.lock().await;
 
-            match model_lock.take_request() {
-                Some(request) => match request {
-                    Request::Open => {
-                        // driver_lock.open(&model_lock.settings()).await.unwrap();
-                    }
-                    Request::Close => todo!(),
-                    Request::Restart => todo!(),
-                },
-                None => todo!(),
+                match model_lock.take_request() {
+                    Some(request) => match request {
+                        Request::Open => {
+                            driver.open(&model_lock.settings()).await.unwrap();
+                        }
+                        Request::Close => todo!(),
+                        Request::Restart => todo!(),
+                    },
+                    None => todo!(),
+                }
+
+                drop(model_lock);
             }
+            _ = driver.read(&mut buf) => {
+                println!("data : {:?}", buf);
+                // attribute.set(buf).await;
+            }
+            // _ = driver_lock.read_available() => {
+            //     println!("read");
+            // }
 
-            drop(model_lock);
+            // something to write
+            // something to read
         }
-        _ = ppp.read(&mut buf) => {
-
-        }
-        // _ = driver_lock.read_available() => {
-        //     println!("read");
-        // }
-
-        // something to write
-        // something to read
     }
+
+    // drop(driver_lock);
 }
 
 // ///
