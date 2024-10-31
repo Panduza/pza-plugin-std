@@ -10,10 +10,12 @@ use tokio::io::AsyncReadExt;
 use tokio::io::AsyncWriteExt;
 use tokio::sync::{Mutex, Notify};
 use tokio::time::sleep;
-use tokio_serial::SerialStream;
+// use tokio_serial::SerialStream;
+use serial2_tokio::SerialPort;
 
 struct Driver {
-    serial_stream: Option<SerialStream>,
+    // pub serial_stream: Option<SerialStream>,
+    pub serial_stream: Option<SerialPort>,
 }
 
 impl Driver {
@@ -41,23 +43,32 @@ impl Driver {
             .as_ref()
             .ok_or_else(|| Error::BadSettings("Port name is not set in settings".to_string()))?;
 
-        //
-        // Setup builder
-        let serial_builder = tokio_serial::new(port_name, settings.baudrate)
-            .data_bits(settings.data_bits)
-            .stop_bits(settings.stop_bits)
-            .parity(settings.parity)
-            .flow_control(settings.flow_control);
+        // //
+        // // Setup builder
+        // let serial_builder = tokio_serial::new(port_name, settings.baudrate)
+        //     .data_bits(settings.data_bits)
+        //     .stop_bits(settings.stop_bits)
+        //     .parity(settings.parity)
+        //     .flow_control(settings.flow_control);
 
-        //
-        // Build the stream
-        self.serial_stream = Some(
-            SerialStream::open(&serial_builder)
-                .map_err(|e| Error::BadSettings(format!("Unable to open serial stream: {}", e)))?,
-        );
+        // //
+        // // Build the stream
+        // self.serial_stream = Some(
+        //     SerialStream::open(&serial_builder)
+        //         .map_err(|e| Error::BadSettings(format!("Unable to open serial stream: {}", e)))?,
+        // );
 
         Ok(())
     }
+
+    // pub async fn read_available(&self) {
+    //     match &self.serial_stream {
+    //         Some(stream) => {
+    //             stream.readable().await.unwrap();
+    //         }
+    //         None => sleep(Duration::from_secs(60)).await,
+    //     }
+    // }
 }
 
 ///
@@ -79,14 +90,16 @@ pub async fn mount_data_attribute(
     //
     //
     let request_notifier = model.lock().await.clone_request_notifier();
-    spawn_loop!(device, {
-        //
-        //
-        let mut driver = Driver::new();
-        //
-        //
-        process_requests(request_notifier.clone(), model.clone(), &mut driver).await;
-    });
+    device
+        .spawn(async move {
+            // tokio::spawn(async move {
+            // loop {
+            process_requests(request_notifier.clone(), model.clone()).await;
+            // }
+
+            Ok(())
+        })
+        .await;
 
     // spawn_on_command!(
     //     device,
@@ -97,7 +110,25 @@ pub async fn mount_data_attribute(
     Ok(())
 }
 
-async fn process_requests(notifier: Arc<Notify>, model: Arc<Mutex<Model>>, driver: &mut Driver) {
+///
+///
+///
+async fn process_requests(
+    notifier: Arc<Notify>,
+    model: Arc<Mutex<Model>>,
+    // driver: Arc<Mutex<Driver>>,
+) {
+    // //
+    //
+    let driver = Arc::new(Mutex::new(Driver::new()));
+
+    let mut ppp = driver.lock().await.serial_stream.take().unwrap();
+
+    // // ppp.readable().await;
+    let mut buf: [u8; 9] = [0; 9];
+    // ppp.try_read(&mut buf);
+
+    // let mut driver_lock = driver.lock().await;
     tokio::select! {
 
         //
@@ -108,7 +139,9 @@ async fn process_requests(notifier: Arc<Notify>, model: Arc<Mutex<Model>>, drive
 
             match model_lock.take_request() {
                 Some(request) => match request {
-                    Request::Open => {}
+                    Request::Open => {
+                        // driver_lock.open(&model_lock.settings()).await.unwrap();
+                    }
                     Request::Close => todo!(),
                     Request::Restart => todo!(),
                 },
@@ -117,6 +150,12 @@ async fn process_requests(notifier: Arc<Notify>, model: Arc<Mutex<Model>>, drive
 
             drop(model_lock);
         }
+        _ = ppp.read(&mut buf) => {
+
+        }
+        // _ = driver_lock.read_available() => {
+        //     println!("read");
+        // }
 
         // something to write
         // something to read
