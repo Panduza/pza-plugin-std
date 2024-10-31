@@ -31,6 +31,49 @@ impl StdSerialPortDevice {
     }
 }
 
+impl StdSerialPortDevice {
+    // ///
+    // /// Prepare settings of the device
+    // ///
+    // pub async fn prepare_settings(&mut self, device: Device) -> Result<(), Error> {
+    //     // Get the device logger
+    //     let logger = device.logger.clone();
+
+    //     // Get the device settings
+    //     let json_settings = device
+    //         .settings()
+    //         .await
+    //         .or(Some(serde_json::Value::Null))
+    //         .unwrap();
+
+    //     // Log debug info
+    //     logger.info("Build interfaces for \"picoha.dio\" device");
+    //     logger.info(format!("JSON settings: {:?}", json_settings));
+
+    //     // // Usb settings
+    //     // let usb_settings = UsbSettings::new()
+    //     //     .set_vendor(PICOHA_VENDOR_ID)
+    //     //     .set_model(PICOHA_PRODUCT_ID)
+    //     //     .optional_set_serial_from_json_settings(&json_settings);
+    //     // logger.info(format!("USB settings: {:?}", usb_settings));
+
+    //     // Serial settings
+    //     self.serial_settings = Some(
+    //         SerialSettings::new()
+    //             .set_port_name_from_json_or_usb_settings(&json_settings, &usb_settings)
+    //             .map_err(|e| Error::Generic(e.to_string()))?
+    //             .set_baudrate(PICOHA_SERIAL_BAUDRATE)
+    //             .set_read_timeout(Duration::from_secs(2)),
+    //     );
+    //     logger.info(format!(
+    //         "SERIAL settings: {:?}",
+    //         self.serial_settings.as_ref().unwrap()
+    //     ));
+
+    //     Ok(())
+    // }
+}
+
 #[async_trait]
 impl DeviceOperations for StdSerialPortDevice {
     ///
@@ -44,17 +87,9 @@ impl DeviceOperations for StdSerialPortDevice {
         //
         //
         logger.debug("Mount attributes");
-        // //
-        // // Mount bus selector (to choice the bus to use on the pico)
-        // mount_bus_selector(device.clone()).await?;
-        // //
-        // // Mount memory maps
-        // mount_memory_map("C1", 0, device.clone()).await?;
-        // mount_memory_map("C2", 1, device.clone()).await?;
-        // mount_memory_map("C3", 2, device.clone()).await?;
 
-        open::mount_open_attribute(device.clone()).await?;
-        data::mount_data_attribute(device.clone()).await?;
+        open::mount_open_attribute(device.clone(), self.model.clone()).await?;
+        data::mount_data_attribute(device.clone(), self.model.clone()).await?;
 
         // open => boolean
         // settings

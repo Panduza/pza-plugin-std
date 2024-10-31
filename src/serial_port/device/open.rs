@@ -1,11 +1,17 @@
+use crate::serial_port::model::Model;
 use panduza_platform_core::{
-    spawn_on_command, AttOnlyMsgAtt, BidirMsgAtt, BooleanCodec, Device, DeviceLogger, Error,
+    spawn_on_command, BidirMsgAtt, BooleanCodec, Device, DeviceLogger, Error,
 };
+use std::sync::Arc;
+use tokio::sync::Mutex;
 
 ///
 ///
 ///
-pub async fn mount_open_attribute(mut device: Device) -> Result<(), Error> {
+pub async fn mount_open_attribute(
+    mut device: Device,
+    model: Arc<Mutex<Model>>,
+) -> Result<(), Error> {
     //
     // Create the attribute
     let attribute = device
@@ -26,7 +32,11 @@ pub async fn mount_open_attribute(mut device: Device) -> Result<(), Error> {
     spawn_on_command!(
         device,
         attribute,
-        on_open_change(logger_for_cmd_event.clone(), attribute.clone())
+        on_open_change(
+            logger_for_cmd_event.clone(),
+            attribute.clone(),
+            model.clone()
+        )
     );
 
     Ok(())
@@ -38,7 +48,21 @@ pub async fn mount_open_attribute(mut device: Device) -> Result<(), Error> {
 async fn on_open_change(
     logger: DeviceLogger,
     mut attribute: BidirMsgAtt<BooleanCodec>,
+    model: Arc<Mutex<Model>>,
 ) -> Result<(), Error> {
-    while let Some(command) = attribute.pop_cmd().await {}
+    // println!("poooooooooooooooo on_open_change");
+    while let Some(command) = attribute.pop_cmd().await {
+        logger.debug(format!("open {:?}", command));
+
+        let order = command.value;
+        match order {
+            true => {
+                model.lock().await.request_open();
+            }
+            false => {
+                model.lock().await.request_close();
+            }
+        }
+    }
     Ok(())
 }
