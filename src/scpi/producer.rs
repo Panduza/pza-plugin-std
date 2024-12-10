@@ -1,21 +1,21 @@
-use super::device::StdSerialPortDevice;
+use super::device::StdScpiDevice;
 use panduza_platform_core::{DriverOperations, Producer};
 
-pub struct StdSerialPort {}
+pub struct StdScpi {}
 
-impl StdSerialPort {
-    pub fn new() -> Box<StdSerialPort> {
-        Box::new(StdSerialPort {})
+impl StdScpi {
+    pub fn new() -> Box<StdScpi> {
+        Box::new(StdScpi {})
     }
 }
 
-impl Producer for StdSerialPort {
+impl Producer for StdScpi {
     fn manufacturer(&self) -> String {
         "std".to_string()
     }
 
     fn model(&self) -> String {
-        "serial-port".to_string()
+        "scpi".to_string()
     }
 
     fn description(&self) -> String {
@@ -27,6 +27,6 @@ impl Producer for StdSerialPort {
     }
 
     fn produce(&self) -> Result<Box<dyn DriverOperations>, panduza_platform_core::Error> {
-        return Ok(Box::new(StdSerialPortDevice::new()));
+        return Ok(Box::new(StdScpiDevice::new()));
     }
 }

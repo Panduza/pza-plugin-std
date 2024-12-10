@@ -5,8 +5,6 @@ use std::time::Duration;
 use tokio::sync::Mutex;
 use tokio::time::sleep;
 
-use super::model::Model;
-
 // pub mod data;
 // pub mod open;
 // pub mod settings;
@@ -14,24 +12,18 @@ use super::model::Model;
 ///
 /// Device to control PicoHA SSB Board
 ///
-pub struct StdSerialPortDevice {
-    model: Arc<Mutex<Model>>, // Serial stream
-                              // model: settings + control => shared across
-                              // serial_stream: Option<SerialStream>, => totalement own by data
-}
+pub struct StdScpiDevice {}
 
-impl StdSerialPortDevice {
+impl StdScpiDevice {
     ///
     /// Constructor
     ///
     pub fn new() -> Self {
-        StdSerialPortDevice {
-            model: Model::new().into_arc_mutex(),
-        }
+        StdScpiDevice {}
     }
 }
 
-impl StdSerialPortDevice {
+impl StdScpiDevice {
     // ///
     // /// Prepare settings of the device
     // ///
@@ -75,7 +67,7 @@ impl StdSerialPortDevice {
 }
 
 #[async_trait]
-impl DriverOperations for StdSerialPortDevice {
+impl DriverOperations for StdScpiDevice {
     ///
     ///
     ///
@@ -87,6 +79,8 @@ impl DriverOperations for StdSerialPortDevice {
         //
         //
         logger.debug("Mount attributes");
+
+        // => attribute => send command STRING => return response string
 
         // open::mount_open_attribute(device.clone(), self.model.clone()).await?;
         // data::mount_data_attribute(device.clone(), self.model.clone()).await?;
