@@ -19,6 +19,6 @@ pub fn plugin_producers() -> Vec<Box<dyn Producer>> {
 //
 pub fn plugin_scanners() -> Vec<Box<dyn Scanner>> {
     let mut scanners: Vec<Box<dyn Scanner>> = vec![];
-
+    scanners.push(scpi::Package::default().boxed());
     return scanners;
 }

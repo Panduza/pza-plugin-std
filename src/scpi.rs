@@ -52,7 +52,10 @@ impl Scanner for Package {
 
         if let Ok(devices_list) = nusb::list_devices() {
             for dev in devices_list {
-                let mut po = ProductionOrder::new("std.scpi", "instance")
+                let man = dev.manufacturer_string().unwrap_or("?");
+                let pro = dev.product_string().unwrap_or("?");
+
+                let mut po = ProductionOrder::new("std.scpi", format!("{}.{}", man, pro))
                     .add_u16_setting("usb_vid", dev.vendor_id())
                     .add_u16_setting("usb_pid", dev.product_id());
 
