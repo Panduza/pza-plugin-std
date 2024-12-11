@@ -11,7 +11,7 @@ mod serial_port;
 pub fn plugin_producers() -> Vec<Box<dyn Producer>> {
     let mut producers: Vec<Box<dyn Producer>> = vec![];
     producers.push(serial_port::producer::StdSerialPort::new());
-    producers.push(scpi::producer::StdScpi::new());
+    producers.push(scpi::Package::default().boxed());
     return producers;
 }
 

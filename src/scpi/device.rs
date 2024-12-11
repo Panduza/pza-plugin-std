@@ -11,24 +11,13 @@ use tokio::time::sleep;
 // pub mod open;
 // pub mod settings;
 
-static DEVICE_VENDOR_ID: u16 = 0x3121;
-static DEVICE_PRODUCT_ID: u16 = 0x5000;
-
+#[derive(Default)]
 ///
 /// Device to control PicoHA SSB Board
 ///
-pub struct StdScpiDevice {}
+pub struct Device {}
 
-impl StdScpiDevice {
-    ///
-    /// Constructor
-    ///
-    pub fn new() -> Self {
-        StdScpiDevice {}
-    }
-}
-
-impl StdScpiDevice {
+impl Device {
     // ///
     // /// Prepare settings of the device
     // ///
@@ -72,7 +61,7 @@ impl StdScpiDevice {
 }
 
 #[async_trait]
-impl DriverOperations for StdScpiDevice {
+impl DriverOperations for Device {
     ///
     ///
     ///
@@ -81,24 +70,24 @@ impl DriverOperations for StdScpiDevice {
         //
         let logger = instance.logger.clone();
 
-        // Usb settings
-        let usb_settings = UsbSettings::new()
-            .set_vendor(DEVICE_VENDOR_ID)
-            .set_model(DEVICE_PRODUCT_ID);
-        // .optional_set_serial_from_json_settings(&json_settings);
-        logger.info(format!("USB settings: {}", usb_settings));
+        // // Usb settings
+        // let usb_settings = UsbSettings::new()
+        //     .set_vendor(DEVICE_VENDOR_ID)
+        //     .set_model(DEVICE_PRODUCT_ID);
+        // // .optional_set_serial_from_json_settings(&json_settings);
+        // logger.info(format!("USB settings: {}", usb_settings));
 
-        // let dev = usb_settings.find_usb_device();
-        // logger.info(format!("dev: {:?}", dev));
+        // // let dev = usb_settings.find_usb_device();
+        // // logger.info(format!("dev: {:?}", dev));
 
-        // endpoint_in: 0x81,
-        // endpoint_out: 0x01,
-        // max_packet_size: 512,
-        let mut driver = UsbTmcDriver::open(&usb_settings, 0x81, 0x01, 512)
-            .unwrap()
-            .into_arc_mutex();
+        // // endpoint_in: 0x81,
+        // // endpoint_out: 0x01,
+        // // max_packet_size: 512,
+        // let mut driver = UsbTmcDriver::open(&usb_settings, 0x81, 0x01, 512)
+        //     .unwrap()
+        //     .into_arc_mutex();
 
-        panduza_platform_core::std::class::repl::mount("scpi", instance.clone(), driver).await?;
+        // panduza_platform_core::std::class::repl::mount("scpi", instance.clone(), driver).await?;
 
         // => attribute => send command STRING => return response string
 

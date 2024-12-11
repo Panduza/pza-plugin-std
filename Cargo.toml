@@ -23,10 +23,13 @@ tokio = { version = "1", features = ["full", "tracing"] }
 serde_json = "1.0.114"
 # Async trait support
 async-trait = "0.1.77"
-
 #
 # tokio-serial = "5.4.1"
 serial2-tokio = "0.1.13"
+#
+# Usb driver library
+# 
+nusb = "0.1.9"
 
 # Trace instrumentation at disabled levels will be skipped and will not even be present
 # in the resulting binary unless the verbosity level is specified dynamically.
