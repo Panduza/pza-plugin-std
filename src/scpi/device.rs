@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use panduza_platform_core::drivers::usb::tmc::Driver as UsbTmcDriver;
 use panduza_platform_core::drivers::usb::Settings as UsbSettings;
-use panduza_platform_core::{DriverOperations, Error, Instance};
+use panduza_platform_core::{log_debug, DriverOperations, Error, Instance};
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::Mutex;
@@ -74,7 +74,10 @@ impl DriverOperations for Device {
 
         let settings = instance.settings().await.unwrap();
 
-        let usb_settings = UsbSettings::new().try_extract_from_json_settings(&settings);
+        //
+        // Compose USB settings
+        let usb_settings = UsbSettings::from_json_settings(&settings);
+        log_debug!(logger, "Try to open SCPI interface on {:?}", &usb_settings);
 
         //     .set_vendor(DEVICE_VENDOR_ID)
         //     .set_model(DEVICE_PRODUCT_ID);
@@ -87,24 +90,12 @@ impl DriverOperations for Device {
         // // endpoint_in: 0x81,
         // // endpoint_out: 0x01,
         // // max_packet_size: 512,
-        // let mut driver = UsbTmcDriver::open(&usb_settings, 0x81, 0x01, 512)
-        //     .unwrap()
-        //     .into_arc_mutex();
 
-        // panduza_platform_core::std::class::repl::mount("scpi", instance.clone(), driver).await?;
-
-        // => attribute => send command STRING => return response string
-
-        // open::mount_open_attribute(device.clone(), self.model.clone()).await?;
-        // data::mount_data_attribute(device.clone(), self.model.clone()).await?;
-
-        // open => boolean
-        // settings
-        //      - port_name
-        //      - baudrate
-        //      -
-        // data -> attribut stream string
         //
+        // Mount the driver
+        let mut driver = UsbTmcDriver::open(&usb_settings, 0x81, 0x01, 512)?.into_arc_mutex();
+
+        panduza_platform_core::std::class::repl::mount("scpi", instance.clone(), driver).await?;
 
         Ok(())
     }
