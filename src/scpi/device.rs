@@ -63,15 +63,19 @@ impl Device {
 #[async_trait]
 impl DriverOperations for Device {
     ///
-    ///
+    /// Mount the device instance
     ///
     async fn mount(&mut self, instance: Instance) -> Result<(), Error> {
         //
         //
         let logger = instance.logger.clone();
 
-        // // Usb settings
-        // let usb_settings = UsbSettings::new()
+        // Usb settings
+
+        let settings = instance.settings().await.unwrap();
+
+        let usb_settings = UsbSettings::new().try_extract_from_json_settings(&settings);
+
         //     .set_vendor(DEVICE_VENDOR_ID)
         //     .set_model(DEVICE_PRODUCT_ID);
         // // .optional_set_serial_from_json_settings(&json_settings);
