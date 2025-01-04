@@ -1,37 +1,23 @@
 use async_trait::async_trait;
-use panduza_platform_core::{DriverOperations, Error, Instance};
+use panduza_platform_core::connector::usb::tmc::Driver as UsbTmcDriver;
+use panduza_platform_core::connector::usb::Settings as UsbSettings;
+use panduza_platform_core::{log_debug, DriverOperations, Error, Instance};
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::Mutex;
 use tokio::time::sleep;
 
-use super::model::Model;
-
 // pub mod data;
 // pub mod open;
 // pub mod settings;
 
+#[derive(Default)]
 ///
 /// Device to control PicoHA SSB Board
 ///
-pub struct StdSerialPortDevice {
-    model: Arc<Mutex<Model>>, // Serial stream
-                              // model: settings + control => shared across
-                              // serial_stream: Option<SerialStream>, => totalement own by data
-}
+pub struct Device {}
 
-impl StdSerialPortDevice {
-    ///
-    /// Constructor
-    ///
-    pub fn new() -> Self {
-        StdSerialPortDevice {
-            model: Model::new().into_arc_mutex(),
-        }
-    }
-}
-
-impl StdSerialPortDevice {
+impl Device {
     // ///
     // /// Prepare settings of the device
     // ///
@@ -75,29 +61,41 @@ impl StdSerialPortDevice {
 }
 
 #[async_trait]
-impl DriverOperations for StdSerialPortDevice {
+impl DriverOperations for Device {
     ///
+    /// Mount the device instance
     ///
-    ///
-    async fn mount(&mut self, device: Instance) -> Result<(), Error> {
+    async fn mount(&mut self, instance: Instance) -> Result<(), Error> {
         //
         //
-        let logger = device.logger.clone();
+        let logger = instance.logger.clone();
+
+        // Usb settings
+
+        let settings = instance.settings().await.unwrap();
 
         //
-        //
-        logger.debug("Mount attributes");
+        // Compose USB settings
+        let usb_settings = UsbSettings::from_json_settings(&settings);
+        log_debug!(logger, "Try to open SCPI interface on {:?}", &usb_settings);
 
-        // open::mount_open_attribute(device.clone(), self.model.clone()).await?;
-        // data::mount_data_attribute(device.clone(), self.model.clone()).await?;
+        //     .set_vendor(DEVICE_VENDOR_ID)
+        //     .set_model(DEVICE_PRODUCT_ID);
+        // // .optional_set_serial_from_json_settings(&json_settings);
+        // logger.info(format!("USB settings: {}", usb_settings));
 
-        // open => boolean
-        // settings
-        //      - port_name
-        //      - baudrate
-        //      -
-        // data -> attribut stream string
+        // // let dev = usb_settings.find_usb_device();
+        // // logger.info(format!("dev: {:?}", dev));
+
+        // // endpoint_in: 0x81,
+        // // endpoint_out: 0x01,
+        // // max_packet_size: 512,
+
         //
+        // Mount the driver
+        let mut driver = UsbTmcDriver::open(&usb_settings, 0x81, 0x01, 512)?.into_arc_mutex();
+
+        panduza_platform_core::std::class::repl::mount("scpi", instance.clone(), driver).await?;
 
         Ok(())
     }
