@@ -1,6 +1,6 @@
 use async_trait::async_trait;
-use panduza_platform_core::drivers::usb::tmc::Driver as UsbTmcDriver;
-use panduza_platform_core::drivers::usb::Settings as UsbSettings;
+use panduza_platform_core::connector::usb::tmc::Driver as UsbTmcDriver;
+use panduza_platform_core::connector::usb::Settings as UsbSettings;
 use panduza_platform_core::{log_debug, DriverOperations, Error, Instance};
 use std::sync::Arc;
 use std::time::Duration;
