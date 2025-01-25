@@ -10,7 +10,7 @@ crate-type = ["cdylib"]
 [dependencies]
 
 # The panduza core library
-panduza-platform-core = { git = "https://github.com/Panduza/panduza-platform-core", tag = "0.2.0", features = [
+panduza-platform-core = { path = "C:/Users/xavie/workspace/panduza-platform-core", features = [
     "serial",
 ] }
 # The panduza connectors library
