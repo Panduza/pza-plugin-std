@@ -1,25 +1,27 @@
-use super::device::StdSerialPortDevice;
+pub mod device;
+
 use panduza_platform_core::{Actions, Producer};
 
-pub struct StdSerialPort {}
+#[derive(Default)]
+pub struct Package {}
 
-impl StdSerialPort {
-    pub fn new() -> Box<StdSerialPort> {
-        Box::new(StdSerialPort {})
+impl Package {
+    pub fn boxed(self) -> Box<Self> {
+        Box::new(self)
     }
 }
 
-impl Producer for StdSerialPort {
+impl Producer for Package {
     fn manufacturer(&self) -> String {
         "std".to_string()
     }
 
     fn model(&self) -> String {
-        "serial-port".to_string()
+        "serial_stream".to_string()
     }
 
     fn description(&self) -> String {
-        "".to_string()
+        "Serial stream interface".to_string()
     }
 
     fn props(&self) -> panduza_platform_core::Props {
@@ -27,6 +29,6 @@ impl Producer for StdSerialPort {
     }
 
     fn produce(&self) -> Result<Box<dyn Actions>, panduza_platform_core::Error> {
-        return Ok(Box::new(StdSerialPortDevice::new()));
+        return Ok(Box::new(device::Device::new()));
     }
 }

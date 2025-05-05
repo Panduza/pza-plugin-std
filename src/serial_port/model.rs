@@ -2,8 +2,8 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 use tokio::sync::Notify;
 
-use panduza_platform_core::connector::serial::Settings as SerialSettings;
-
+//use panduza_platform_core::connector::serial::Settings as SerialSettings;
+use panduza_platform_core::interface::serial::SerialSettings;
 pub enum Request {
     Open,
     Close,

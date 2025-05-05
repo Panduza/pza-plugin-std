@@ -1,7 +1,10 @@
 use async_trait::async_trait;
-use panduza_platform_core::connector::usb::tmc::Driver as UsbTmcDriver;
-use panduza_platform_core::connector::usb::Settings as UsbSettings;
-use panduza_platform_core::{log_debug, DriverOperations, Error, Instance};
+use panduza_platform_core::interface::usb::tmc::UsbTmcInterface as UsbTmcDriver;
+use panduza_platform_core::interface::usb::UsbSettings;
+//use panduza_platform_core::connector::usb::tmc::Driver as UsbTmcDriver;
+//use panduza_platform_core::connector::usb::Settings as UsbSettings;
+use panduza_platform_core::Container;
+use panduza_platform_core::{log_debug, Actions, Error, Instance};
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::Mutex;
@@ -61,14 +64,14 @@ impl Device {
 }
 
 #[async_trait]
-impl DriverOperations for Device {
+impl Actions for Device {
     ///
     /// Mount the device instance
     ///
     async fn mount(&mut self, instance: Instance) -> Result<(), Error> {
         //
         //
-        let logger = instance.logger.clone();
+        let logger = instance.logger().clone();
 
         // Usb settings
 
@@ -93,9 +96,10 @@ impl DriverOperations for Device {
 
         //
         // Mount the driver
-        let mut driver = UsbTmcDriver::open(&usb_settings, 0x81, 0x01, 512)?.into_arc_mutex();
+        let mut driver = UsbTmcDriver::open(&usb_settings)?.into_arc_mutex();
 
-        panduza_platform_core::std::class::repl::mount("scpi", instance.clone(), driver).await?;
+        panduza_platform_core::template::class::repl::mount("scpi", instance.clone(), driver)
+            .await?;
 
         Ok(())
     }
