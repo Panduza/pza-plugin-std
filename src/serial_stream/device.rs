@@ -1,4 +1,4 @@
-mod string;
+mod bytes;
 use async_trait::async_trait;
 use panduza_platform_core::Error::DriverError;
 use panduza_platform_core::{
@@ -138,7 +138,7 @@ impl Actions for Device {
                         "Driver mount finished, string attributes can now be mounted"
                     );
 
-                    string::mount(instance.clone(), reader, writer).await?;
+                    bytes::mount(instance.clone(), reader, writer).await?;
 
                     // Ok
                     log_info_mount_end!(logger);
