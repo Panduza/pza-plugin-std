@@ -1,4 +1,5 @@
-mod bytes;
+mod tcp;
+mod serial_port;
 use async_trait::async_trait;
 use panduza_platform_core::Error::DriverError;
 use panduza_platform_core::{
@@ -10,6 +11,8 @@ use std::time::Duration;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
 use tokio::time::sleep;
+//serial port
+use tokio_serial::{SerialPortBuilderExt, SerialStream};
 
 #[derive(Default)]
 ///
@@ -36,22 +39,36 @@ impl Actions for Device {
         // Catching the IP and the Port in the settings
         match instance.settings().await {
             Some(settings) => {
-                let ip = settings
-                    .get("ip")
-                    .expect("no ip found in the tree.json")
-                    .as_str()
-                    .unwrap();
-                let port = settings
-                    .get("port")
-                    .expect("no port found in the tree.json")
-                    .as_str()
-                    .unwrap();
-
                 let transport = settings
                     .get("transport")
                     .expect("no transport found in the tree.json")
                     .as_str()
                     .unwrap();
+                
+                let tcp_ip = settings
+                    .get("tcp_ip")
+                    .expect("no tcp_ip found in the tree.json")
+                    .as_str()
+                    .unwrap();
+
+                let tcp_port = settings
+                    .get("tcp_port")
+                    .expect("no tcp_port found in the tree.json")
+                    .as_str()
+                    .unwrap();
+
+                let serial_port_name: &str = settings
+                    .get("serial_port_name")
+                    .expect("no serial_port_name found in the tree.json")
+                    .as_str()
+                    .unwrap();
+
+                let serial_baud_rate_str: &str = settings
+                    .get("serial_baud_rate")
+                    .expect("no serial_port_name found in the tree.json")
+                    .as_str()
+                    .unwrap();
+                let serial_baud_rate:u32 = serial_baud_rate_str.parse().expect("serial_baud_rate should be a 32 bits integers");
 
                 let message_on_connect = settings
                     .get("message_on_connect")
@@ -59,16 +76,15 @@ impl Actions for Device {
                     .as_bool()
                     .unwrap();
 
-                log_info!(logger, "[ SETTINGS CHOSEN ]");
-                log_info!(logger, "ip : {}", ip);
-                log_info!(logger, "port : {}", port);
-                log_info!(logger, "transport : {}", transport);
-                log_info!(logger, "message_on_connect : {}", message_on_connect);
-
                 if transport == "tcp" {
+                    log_info!(logger, "[ SETTINGS CHOSEN ]");
+                    log_info!(logger, "transport : {}", transport);
+                    log_info!(logger, "tcp_ip : {}", tcp_ip);
+                    log_info!(logger, "tcp_port : {}", tcp_port);
+                    log_info!(logger, "message_on_connect : {}", message_on_connect);
                     log_info!(logger, "Mounting serial stream over tcp driver ...");
 
-                    let device_addr = format!("{}:{}", ip, port);
+                    let device_addr = format!("{}:{}", tcp_ip, tcp_port);
 
                     // Connecting to the Zybo board
                     log_info!(
@@ -138,7 +154,30 @@ impl Actions for Device {
                         "Driver mount finished, string attributes can now be mounted"
                     );
 
-                    bytes::mount(instance.clone(), reader, writer).await?;
+                    tcp::mount(instance.clone(), reader, writer).await?;
+
+                    // Ok
+                    log_info_mount_end!(logger);
+                    return Ok(());
+                } else if transport == "serial-port"{
+                    log_info!(logger, "[ SETTINGS CHOSEN ]");
+                    log_info!(logger, "serial_port_name : {}", serial_port_name);
+                    log_info!(logger, "serial_baud_rate : {}", serial_baud_rate);
+                    log_info!(
+                        logger,
+                        "Mounting serial port over serial driver ..."
+                    );
+
+                    let port: SerialStream = match tokio_serial::new(serial_port_name, serial_baud_rate).timeout(Duration::from_millis(1000)).open_native_async() {
+                        Ok(p) => p,
+                        Err(_) => {
+                            log_info!(logger, "Connection failed, rebooting device...");
+                            instance.go_error().await;
+                            return Err(DriverError("Connection failed".to_string()));
+                        }
+                    };
+
+                    serial_port::mount(instance.clone(), port).await?;
 
                     // Ok
                     log_info_mount_end!(logger);
@@ -146,7 +185,7 @@ impl Actions for Device {
                 } else {
                     log_info!(
                         logger,
-                        "Mounting  serial stream over serial driver ... [ TO DO ]"
+                        "Mounting other transport over serial driver ... [ TO DO ]"
                     );
                     // Ok
                     log_info_mount_end!(logger);
@@ -171,38 +210,80 @@ impl Actions for Device {
         // Get the IP and the port of the device written in the tree.json
         match instance.settings().await {
             Some(settings) => {
-                let ip = settings
-                    .get("ip")
-                    .expect("no ip found in the tree.json")
+                
+                let transport = settings
+                    .get("transport")
+                    .expect("no transport found in the tree.json")
                     .as_str()
                     .unwrap();
-                let port = settings
-                    .get("port")
-                    .expect("no port found in the tree.json")
+                let tcp_ip = settings
+                    .get("tcp_ip")
+                    .expect("no tcp_ip found in the tree.json")
                     .as_str()
                     .unwrap();
-                let device_addr = format!("{}:{}", ip, port);
+                let tcp_port = settings
+                    .get("tcp_port")
+                    .expect("no tcp_port found in the tree.json")
+                    .as_str()
+                    .unwrap();
+                let serial_port_name: &str = settings
+                    .get("serial_port_name")
+                    .expect("no serial_port_name found in the tree.json")
+                    .as_str()
+                    .unwrap();
+                let serial_baud_rate_str: &str = settings
+                    .get("serial_baud_rate")
+                    .expect("no serial_port_name found in the tree.json")
+                    .as_str()
+                    .unwrap();               
+                let serial_baud_rate:u32 = serial_baud_rate_str.parse().expect("serial_baud_rate should be a 32 bits integers");
 
                 log_info!(
                     instance.logger(),
                     "Trying to reconnect before rebooting ..."
                 );
 
-                let _stream: TcpStream = loop {
-                    match TcpStream::connect(&device_addr).await {
-                        Ok(s) => {
-                            log_info!(
-                                instance.logger(),
-                                "Reconnection succeed : Trying to mount ..."
-                            );
-                            break s;
+                if transport == "tcp" {
+                    let device_addr = format!("{}:{}", tcp_ip, tcp_port);
+
+                    let _stream: TcpStream = loop {
+                        match TcpStream::connect(&device_addr).await {
+                            Ok(s) => {
+                                log_info!(
+                                    instance.logger(),
+                                    "Reconnection succeed : Trying to mount ..."
+                                );
+                                break s;
+                            }
+                            _ => {
+                                log_info!(instance.logger(), "Reconnection failed : retrying ...");
+                                continue;
+                            }
                         }
-                        _ => {
-                            log_info!(instance.logger(), "Reconnection failed : retrying ...");
-                            continue;
-                        }
-                    }
-                };
+                    };
+                } else if transport == "serial-port" {
+                    let port: SerialStream = loop {
+                        match tokio_serial::new(serial_port_name, serial_baud_rate).timeout(Duration::from_millis(1000)).open_native_async() {
+                            Ok(p) => {
+                                log_info!(
+                                    instance.logger(),
+                                    "Reconnection succeed : Trying to mount ..."
+                                );
+                                break p;
+                            }
+                            _ => {
+                                log_info!(instance.logger(), "Reconnection failed : retrying ...");
+                                continue;
+                            }
+                            }
+                    };
+                    drop(port);
+                } else {
+                    log_info!(
+                        instance.logger(),
+                        "Reboot other transport ... [ TO DO ]"
+                    );
+                }
             }
 
             None => {
