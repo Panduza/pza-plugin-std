@@ -1,5 +1,5 @@
-mod tcp;
 mod serial_port;
+mod tcp;
 use async_trait::async_trait;
 use panduza_platform_core::Error::DriverError;
 use panduza_platform_core::{
@@ -44,7 +44,7 @@ impl Actions for Device {
                     .expect("no transport found in the tree.json")
                     .as_str()
                     .unwrap();
-                
+
                 let tcp_ip = settings
                     .get("tcp_ip")
                     .expect("no tcp_ip found in the tree.json")
@@ -68,7 +68,9 @@ impl Actions for Device {
                     .expect("no serial_port_name found in the tree.json")
                     .as_str()
                     .unwrap();
-                let serial_baud_rate:u32 = serial_baud_rate_str.parse().expect("serial_baud_rate should be a 32 bits integers");
+                let serial_baud_rate: u32 = serial_baud_rate_str
+                    .parse()
+                    .expect("serial_baud_rate should be a 32 bits integers");
 
                 let message_on_connect = settings
                     .get("message_on_connect")
@@ -97,7 +99,6 @@ impl Actions for Device {
                         Ok(s) => s,
                         Err(_) => {
                             log_info!(logger, "Connection failed, rebooting device...");
-                            instance.go_error().await;
                             return Err(DriverError("Connection failed".to_string()));
                         }
                     };
@@ -115,7 +116,6 @@ impl Actions for Device {
                                 // Sending the empty command
                                 if let Err(e) = writer.write_all("ping".as_bytes()).await {
                                     log_info!(logger, "Error while sending: {}", e);
-                                    instance.go_error().await;
                                     return Err(DriverError(
                                         "Write error during message on connect".to_string(),
                                     ));
@@ -133,7 +133,6 @@ impl Actions for Device {
                                         }
                                         Err(e) => {
                                             log_info!(logger, "Read error: {}, remounting...", e);
-                                            instance.go_error().await;
                                             return Err(DriverError(
                                                 "Read error during message on connect".to_string(),
                                             ));
@@ -159,23 +158,23 @@ impl Actions for Device {
                     // Ok
                     log_info_mount_end!(logger);
                     return Ok(());
-                } else if transport == "serial-port"{
+                } else if transport == "serial-port" {
                     log_info!(logger, "[ SETTINGS CHOSEN ]");
                     log_info!(logger, "serial_port_name : {}", serial_port_name);
                     log_info!(logger, "serial_baud_rate : {}", serial_baud_rate);
-                    log_info!(
-                        logger,
-                        "Mounting serial port over serial driver ..."
-                    );
+                    log_info!(logger, "Mounting serial port over serial driver ...");
 
-                    let port: SerialStream = match tokio_serial::new(serial_port_name, serial_baud_rate).timeout(Duration::from_millis(1000)).open_native_async() {
-                        Ok(p) => p,
-                        Err(_) => {
-                            log_info!(logger, "Connection failed, rebooting device...");
-                            instance.go_error().await;
-                            return Err(DriverError("Connection failed".to_string()));
-                        }
-                    };
+                    let port: SerialStream =
+                        match tokio_serial::new(serial_port_name, serial_baud_rate)
+                            .timeout(Duration::from_millis(1000))
+                            .open_native_async()
+                        {
+                            Ok(p) => p,
+                            Err(_) => {
+                                log_info!(logger, "Connection failed, rebooting device...");
+                                return Err(DriverError("Connection failed".to_string()));
+                            }
+                        };
 
                     serial_port::mount(instance.clone(), port).await?;
 
@@ -210,7 +209,6 @@ impl Actions for Device {
         // Get the IP and the port of the device written in the tree.json
         match instance.settings().await {
             Some(settings) => {
-                
                 let transport = settings
                     .get("transport")
                     .expect("no transport found in the tree.json")
@@ -235,8 +233,10 @@ impl Actions for Device {
                     .get("serial_baud_rate")
                     .expect("no serial_port_name found in the tree.json")
                     .as_str()
-                    .unwrap();               
-                let serial_baud_rate:u32 = serial_baud_rate_str.parse().expect("serial_baud_rate should be a 32 bits integers");
+                    .unwrap();
+                let serial_baud_rate: u32 = serial_baud_rate_str
+                    .parse()
+                    .expect("serial_baud_rate should be a 32 bits integers");
 
                 log_info!(
                     instance.logger(),
@@ -263,7 +263,10 @@ impl Actions for Device {
                     };
                 } else if transport == "serial-port" {
                     let port: SerialStream = loop {
-                        match tokio_serial::new(serial_port_name, serial_baud_rate).timeout(Duration::from_millis(1000)).open_native_async() {
+                        match tokio_serial::new(serial_port_name, serial_baud_rate)
+                            .timeout(Duration::from_millis(1000))
+                            .open_native_async()
+                        {
                             Ok(p) => {
                                 log_info!(
                                     instance.logger(),
@@ -273,16 +276,16 @@ impl Actions for Device {
                             }
                             _ => {
                                 log_info!(instance.logger(), "Reconnection failed : retrying ...");
+                                tokio::time::sleep(Duration::from_millis(300)).await;
                                 continue;
                             }
-                            }
+                        }
                     };
+                    log_info!(instance.logger(), "Dropping port");
                     drop(port);
+                    tokio::time::sleep(Duration::from_millis(300)).await;
                 } else {
-                    log_info!(
-                        instance.logger(),
-                        "Reboot other transport ... [ TO DO ]"
-                    );
+                    log_info!(instance.logger(), "Reboot other transport ... [ TO DO ]");
                 }
             }
 

@@ -6,6 +6,10 @@ edition = "2021"
 path = "src/lib.rs"
 crate-type = ["cdylib"]
 
+[[test]]
+name = "plugin_std"
+harness = false
+
 
 [dependencies]
 
@@ -16,6 +20,9 @@ crate-type = ["cdylib"]
 panduza-platform-core = { path = "../platform-core", features = ["serial"] }
 # The panduza connectors library
 panduza-platform-connectors = { git = "https://github.com/Panduza/panduza-platform-connectors" }
+# The panduza client library
+panduza = { path = "../panduza-rust"}
+
 
 # Main async framework for the platform
 tokio = { version = "1.43.0", features = ["full", "tracing"] }
@@ -32,6 +39,8 @@ serial2-tokio = "0.1.13"
 nusb = "0.1.9"
 
 bytes = "1"
+
+cucumber = { version = "0.21.1", features = ["tracing", "timestamps"] }
 
 # Trace instrumentation at disabled levels will be skipped and will not even be present
 # in the resulting binary unless the verbosity level is specified dynamically.
