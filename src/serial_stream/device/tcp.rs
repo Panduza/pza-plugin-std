@@ -1,7 +1,6 @@
 use panduza_platform_core::{
-    log_debug_mount_end, log_debug_mount_start, log_info, Container, Error, Instance,
+    log_debug_mount_end, log_debug_mount_start, log_trace, Container, Error, Instance,
 };
-
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::tcp::{OwnedReadHalf, OwnedWriteHalf};
 
@@ -40,7 +39,7 @@ pub async fn mount(
         loop {
             att_serial_stream_tx.wait_for_commands().await;
             while let Some(command) = att_serial_stream_tx.pop().await {
-                log_info!(
+                log_trace!(
                     att_serial_stream_tx.logger(),
                     "Command received from client - {:?}",
                     command
@@ -48,7 +47,7 @@ pub async fn mount(
                 if let Err(e) = writer.write_all(&command).await {
                     return Err(format!("Failed to send the command to the device: {}", e));
                 }
-                log_info!(
+                log_trace!(
                     att_serial_stream_tx.logger(),
                     "Command sent via TCP to the device - {:?}",
                     command
@@ -71,12 +70,14 @@ pub async fn mount(
                 }
                 Ok(n) => {
                     let data = bytes::Bytes::copy_from_slice(&buffer[..n]);
+                    let data_log = data.clone();
                     if let Err(e) = att_serial_stream_rx.set(data).await {
                         return Err(format!("Failed to set data in att_serial_stream_rx: {}", e));
                     }
-                    log_info!(
+                    log_trace!(
                         att_serial_stream_rx.logger(),
-                        "Response sent to client via att_serial_stream_rx"
+                        "Response sent to client via att_serial_stream_rx - {:?}",
+                        data_log
                     );
                 }
                 Err(e) => {

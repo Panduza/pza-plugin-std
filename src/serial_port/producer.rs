@@ -1,5 +1,5 @@
 use super::device::StdSerialPortDevice;
-use panduza_platform_core::{Actions, Producer};
+use panduza_platform_core::{DriverOperations, Producer};
 
 pub struct StdSerialPort {}
 
@@ -26,7 +26,7 @@ impl Producer for StdSerialPort {
         panduza_platform_core::Props::default()
     }
 
-    fn produce(&self) -> Result<Box<dyn Actions>, panduza_platform_core::Error> {
+    fn produce(&self) -> Result<Box<dyn DriverOperations>, panduza_platform_core::Error> {
         return Ok(Box::new(StdSerialPortDevice::new()));
     }
 }

@@ -16,12 +16,8 @@ const PLAFORM_PORT: u16 = 1883;
 pub struct SerialStreamSubWorld {
     pub att_bytes_rx: Option<BytesAttribute>,
     pub att_bytes_tx: Option<BytesAttribute>,
-    pub att_boolean_alert_wo: Option<BooleanAttribute>,
-    pub att_boolean_error_wo: Option<BooleanAttribute>,
     //pub topic_bytes_rx: Option<String>,
     //pub topic_bytes_tx: Option<String>,
-    pub topic_boolean_alert_wo: Option<String>,
-    pub topic_boolean_error_wo: Option<String>,
 }
 
 #[derive(Default, World)]
@@ -80,7 +76,7 @@ async fn a_client_connected_on_a_test_platform(world: &mut PluginWorld) {
 ///
 ///
 #[given(expr = "the tested driver connect with the device")]
-async fn driver_connected_with_device(world: &mut PluginWorld) {
+async fn driver_connected_with_device(_world: &mut PluginWorld) {
     //
     // Make sure before starting the test to connect the platform via the plugin serial_stream to the device using a TCP or serial connection
     //

@@ -1,9 +1,9 @@
 mod device;
 
 use device::Device;
-//use panduza_platform_core::ProductionOrder;
-//use panduza_platform_core::Scanner;
-use panduza_platform_core::{Actions, Producer};
+use panduza_platform_core::ProductionOrder;
+use panduza_platform_core::Scanner;
+use panduza_platform_core::{DriverOperations, Producer};
 
 #[derive(Default)]
 pub struct Package {}
@@ -37,11 +37,11 @@ impl Producer for Package {
         props
     }
 
-    fn produce(&self) -> Result<Box<dyn Actions>, panduza_platform_core::Error> {
+    fn produce(&self) -> Result<Box<dyn DriverOperations>, panduza_platform_core::Error> {
         return Ok(Box::new(Device::default()));
     }
 }
-/*
+
 impl Scanner for Package {
     fn name(&self) -> String {
         "std.scpi".to_string()
@@ -70,4 +70,3 @@ impl Scanner for Package {
         orders
     }
 }
-*/

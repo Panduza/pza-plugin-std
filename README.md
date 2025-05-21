@@ -49,7 +49,7 @@ First start a platform with this configuration
 ```
 
 Then start the tcp-server-test with this configuration
-( the tcp-server-test is provided in the tests-tool directory )
+( the tcp-server-test is provided in the tools directory )
 
 ```json
 {

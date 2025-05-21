@@ -3,7 +3,7 @@ mod tcp;
 use async_trait::async_trait;
 use panduza_platform_core::Error::DriverError;
 use panduza_platform_core::{
-    log_error, log_info, log_info_mount_end, log_info_mount_start, Actions, Container, Error,
+    log_error, log_info_mount_end, log_info_mount_start, log_trace, Actions, Container, Error,
     Instance, Logger,
 };
 //tcp
@@ -31,7 +31,7 @@ impl Device {
 
 #[async_trait]
 impl Actions for Device {
-    async fn mount(&mut self, mut instance: Instance) -> Result<(), Error> {
+    async fn mount(&mut self, instance: Instance) -> Result<(), Error> {
         // Start logging
         let logger = instance.logger().clone();
         log_info_mount_start!(logger);
@@ -79,17 +79,17 @@ impl Actions for Device {
                     .unwrap();
 
                 if transport == "tcp" {
-                    log_info!(logger, "[ SETTINGS CHOSEN ]");
-                    log_info!(logger, "transport : {}", transport);
-                    log_info!(logger, "tcp_ip : {}", tcp_ip);
-                    log_info!(logger, "tcp_port : {}", tcp_port);
-                    log_info!(logger, "message_on_connect : {}", message_on_connect);
-                    log_info!(logger, "Mounting serial stream over tcp driver ...");
+                    log_trace!(logger, "[ SETTINGS CHOSEN ]");
+                    log_trace!(logger, "transport : {}", transport);
+                    log_trace!(logger, "tcp_ip : {}", tcp_ip);
+                    log_trace!(logger, "tcp_port : {}", tcp_port);
+                    log_trace!(logger, "message_on_connect : {}", message_on_connect);
+                    log_trace!(logger, "Mounting serial stream over tcp driver ...");
 
                     let device_addr = format!("{}:{}", tcp_ip, tcp_port);
 
                     // Connecting to the Zybo board
-                    log_info!(
+                    log_trace!(
                         logger,
                         "Attempting to connect to the device at address {}",
                         device_addr
@@ -98,7 +98,7 @@ impl Actions for Device {
                     let stream = match TcpStream::connect(device_addr).await {
                         Ok(s) => s,
                         Err(_) => {
-                            log_info!(logger, "Connection failed, rebooting device...");
+                            log_trace!(logger, "Connection failed, rebooting device...");
                             return Err(DriverError("Connection failed".to_string()));
                         }
                     };
@@ -107,7 +107,7 @@ impl Actions for Device {
                     let (mut reader, mut writer) = stream.into_split();
 
                     if message_on_connect == true {
-                        log_info!(
+                        log_trace!(
                             logger,
                             "Sending an empty command to complete the device initialization"
                         );
@@ -115,7 +115,7 @@ impl Actions for Device {
                             {
                                 // Sending the empty command
                                 if let Err(e) = writer.write_all("ping".as_bytes()).await {
-                                    log_info!(logger, "Error while sending: {}", e);
+                                    log_trace!(logger, "Error while sending: {}", e);
                                     return Err(DriverError(
                                         "Write error during message on connect".to_string(),
                                     ));
@@ -124,15 +124,15 @@ impl Actions for Device {
 
                                     match reader.read(&mut buf).await {
                                         Ok(n) if n > 0 => {
-                                            log_info!(logger, "Board initialization complete");
+                                            log_trace!(logger, "Board initialization complete");
                                             break;
                                         }
                                         Ok(_) => {
-                                            log_info!(logger, "No data received, retrying...");
+                                            log_trace!(logger, "No data received, retrying...");
                                             continue;
                                         }
                                         Err(e) => {
-                                            log_info!(logger, "Read error: {}, remounting...", e);
+                                            log_trace!(logger, "Read error: {}, remounting...", e);
                                             return Err(DriverError(
                                                 "Read error during message on connect".to_string(),
                                             ));
@@ -142,13 +142,13 @@ impl Actions for Device {
                             }
                         }
                     } else {
-                        log_info!(
+                        log_trace!(
                             logger,
                             "No need to send a message after the connection of the device"
                         );
                     }
 
-                    log_info!(
+                    log_trace!(
                         logger,
                         "Driver mount finished, string attributes can now be mounted"
                     );
@@ -159,10 +159,10 @@ impl Actions for Device {
                     log_info_mount_end!(logger);
                     return Ok(());
                 } else if transport == "serial-port" {
-                    log_info!(logger, "[ SETTINGS CHOSEN ]");
-                    log_info!(logger, "serial_port_name : {}", serial_port_name);
-                    log_info!(logger, "serial_baud_rate : {}", serial_baud_rate);
-                    log_info!(logger, "Mounting serial port over serial driver ...");
+                    log_trace!(logger, "[ SETTINGS CHOSEN ]");
+                    log_trace!(logger, "serial_port_name : {}", serial_port_name);
+                    log_trace!(logger, "serial_baud_rate : {}", serial_baud_rate);
+                    log_trace!(logger, "Mounting serial port over serial driver ...");
 
                     let port: SerialStream =
                         match tokio_serial::new(serial_port_name, serial_baud_rate)
@@ -171,7 +171,7 @@ impl Actions for Device {
                         {
                             Ok(p) => p,
                             Err(_) => {
-                                log_info!(logger, "Connection failed, rebooting device...");
+                                log_trace!(logger, "Connection failed, rebooting device...");
                                 return Err(DriverError("Connection failed".to_string()));
                             }
                         };
@@ -182,7 +182,7 @@ impl Actions for Device {
                     log_info_mount_end!(logger);
                     return Ok(());
                 } else {
-                    log_info!(
+                    log_trace!(
                         logger,
                         "Mounting other transport over serial driver ... [ TO DO ]"
                     );
@@ -238,7 +238,7 @@ impl Actions for Device {
                     .parse()
                     .expect("serial_baud_rate should be a 32 bits integers");
 
-                log_info!(
+                log_trace!(
                     instance.logger(),
                     "Trying to reconnect before rebooting ..."
                 );
@@ -249,14 +249,14 @@ impl Actions for Device {
                     let _stream: TcpStream = loop {
                         match TcpStream::connect(&device_addr).await {
                             Ok(s) => {
-                                log_info!(
+                                log_trace!(
                                     instance.logger(),
                                     "Reconnection succeed : Trying to mount ..."
                                 );
                                 break s;
                             }
                             _ => {
-                                log_info!(instance.logger(), "Reconnection failed : retrying ...");
+                                log_trace!(instance.logger(), "Reconnection failed : retrying ...");
                                 continue;
                             }
                         }
@@ -268,24 +268,24 @@ impl Actions for Device {
                             .open_native_async()
                         {
                             Ok(p) => {
-                                log_info!(
+                                log_trace!(
                                     instance.logger(),
                                     "Reconnection succeed : Trying to mount ..."
                                 );
                                 break p;
                             }
                             _ => {
-                                log_info!(instance.logger(), "Reconnection failed : retrying ...");
-                                tokio::time::sleep(Duration::from_millis(300)).await;
+                                log_trace!(instance.logger(), "Reconnection failed : retrying ...");
+                                tokio::time::sleep(Duration::from_millis(1000)).await;
                                 continue;
                             }
                         }
                     };
-                    log_info!(instance.logger(), "Dropping port");
+                    log_trace!(instance.logger(), "Dropping port");
                     drop(port);
                     tokio::time::sleep(Duration::from_millis(300)).await;
                 } else {
-                    log_info!(instance.logger(), "Reboot other transport ... [ TO DO ]");
+                    log_trace!(instance.logger(), "Reboot other transport ... [ TO DO ]");
                 }
             }
 

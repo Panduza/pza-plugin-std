@@ -1,11 +1,12 @@
 use panduza_platform_core::{
-    log_debug_mount_end, log_debug_mount_start, log_info, Container, Error, Instance,
+    log_debug_mount_end, log_debug_mount_start, log_trace, Container, Error, Instance,
 };
 
 use std::sync::Arc;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use tokio::sync::watch;
 use tokio::sync::Mutex;
+use tokio::time::timeout;
+use tokio::time::Duration;
 use tokio_serial::SerialStream;
 ///
 pub async fn mount(mut instance: Instance, port: SerialStream) -> Result<(), Error> {
@@ -42,7 +43,7 @@ pub async fn mount(mut instance: Instance, port: SerialStream) -> Result<(), Err
         loop {
             att_serial_stream_tx.wait_for_commands().await;
             while let Some(command) = att_serial_stream_tx.pop().await {
-                log_info!(
+                log_trace!(
                     att_serial_stream_tx.logger(),
                     "Command received from client - {:?}",
                     command
@@ -51,7 +52,7 @@ pub async fn mount(mut instance: Instance, port: SerialStream) -> Result<(), Err
                 if let Err(e) = port_guard_tx.write_all(&command).await {
                     return Err(format!("Failed to send the command to the device: {}", e));
                 }
-                log_info!(
+                log_trace!(
                     att_serial_stream_tx.logger(),
                     "Command sent via TCP to the device"
                 );
@@ -67,25 +68,36 @@ pub async fn mount(mut instance: Instance, port: SerialStream) -> Result<(), Err
     let port_clone_rx = port_shared.clone();
     let rx_handle = tokio::spawn(async move {
         let mut buffer = [0u8; 1024];
-        let mut port_guard_rx = port_clone_rx.lock().await;
         loop {
-            match port_guard_rx.read(&mut buffer).await {
-                Ok(0) => {
-                    return Err("Connection closed by the device".to_string());
-                }
-                Ok(n) => {
+            let result: Result<Result<usize, std::io::Error>, tokio::time::error::Elapsed> =
+                timeout(Duration::from_secs(1), async {
+                    let mut port_guard_rx: tokio::sync::MutexGuard<'_, SerialStream> =
+                        port_clone_rx.lock().await;
+                    port_guard_rx.read(&mut buffer).await
+                })
+                .await;
+
+            match result {
+                Ok(Ok(n)) => {
+                    if n == 0 {
+                        return Err("Connection closed by the device".to_string());
+                    }
                     let data = bytes::Bytes::copy_from_slice(&buffer[..n]);
                     if let Err(e) = att_serial_stream_rx.set(data).await {
                         return Err(format!("Failed to set data in att_serial_stream_rx: {}", e));
                     }
-                    log_info!(
+
+                    log_trace!(
                         att_serial_stream_rx.logger(),
                         "Response sent to client via att_serial_stream_rx - {:?}",
                         String::from_utf8_lossy(&buffer[..n])
                     );
                 }
-                Err(e) => {
+                Ok(Err(e)) => {
                     return Err(format!("Read error: {}", e));
+                }
+                Err(_) => {
+                    continue;
                 }
             }
         }
