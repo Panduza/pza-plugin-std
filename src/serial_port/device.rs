@@ -1,5 +1,6 @@
 use async_trait::async_trait;
-use panduza_platform_core::{DriverOperations, Error, Instance};
+use panduza_platform_core::Container;
+use panduza_platform_core::{Actions, Error, Instance};
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::Mutex;
@@ -75,14 +76,14 @@ impl StdSerialPortDevice {
 }
 
 #[async_trait]
-impl DriverOperations for StdSerialPortDevice {
+impl Actions for StdSerialPortDevice {
     ///
     ///
     ///
     async fn mount(&mut self, device: Instance) -> Result<(), Error> {
         //
         //
-        let logger = device.logger.clone();
+        let logger = device.logger().clone();
 
         //
         //
