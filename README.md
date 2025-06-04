@@ -64,3 +64,29 @@ Then run
 # Run basics tests for plugin_std
 cargo test --test plugin_std
 ```
+## Connection to the Zybo board 
+
+Turn on the the Zybo board
+
+start the TFTP server on the application provided by the project framework-on-SoC
+
+Start a platform with this configuration
+
+```json
+{
+    "devices": [
+        {
+            "name": "serial plugin",
+            "dref": "std.serial_stream",
+            "settings": {
+                "transport": "tcp",
+                "tcp_ip": "192.168.35.11",
+                "tcp_port": "5001",
+                "serial_port_name": "COM5",
+                "serial_baud_rate": "115200",
+                "message_on_connect": true
+            }
+        }
+    ]
+}
+```
